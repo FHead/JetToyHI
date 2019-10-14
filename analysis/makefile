@@ -1,16 +1,22 @@
-default: RunAuAu
+default: TestRun
 
 Messenger.o: Messenger.cpp Messenger.h
 	g++ `root-config --cflags` Messenger.cpp -o Messenger.o -c
 
-Execute: ExampleYi.cpp Messenger.o
+Execute: PlotEMMI.cpp Messenger.o
+	g++ `root-config --cflags --libs` PlotEMMI.cpp -o Execute Messenger.o
+
+Execute2: ExampleYi.cpp Messenger.o
 	g++ `root-config --cflags --libs` ExampleYi.cpp -o Execute Messenger.o
 
 PlotLund: PlotLund.cpp
 	g++ `root-config --cflags --libs` PlotLund.cpp -o PlotLund
 
+ProcessPartonCorrelation: ProcessPartonCorrelation.cpp
+	g++ `root-config --cflags --libs` ProcessPartonCorrelation.cpp -o ProcessPartonCorrelation
+
 TestRun: Execute
-	./Execute
+	./Execute --input ../JetToyHI.root -output Plots --jewel false
 	cp Plots.pdf ~/public/html/
 
 RunAuAu: Execute
