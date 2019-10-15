@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
    vector<string> InputFileNames = CL.GetStringVector("input", ' ');
    vector<double> bins = CL.GetDoubleVector("bins", "200,250,300,400,500,1000");
    string OutputBase = CL.Get("output");
-   string tag = CL.Get("tag", "");   // Should be "Jewel" or "Pyquen".
+   string tag = CL.Get("tag");   // Should be "Jewel" or "Pyquen".
 
    PdfFileHelper PdfFile(OutputBase + ".pdf");
    PdfFile.AddTextPage(tag + " Spectra & RAA");
@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
             {
                JetPTPtr = PbPbJetPT[iT][iC];
                
-               if(tag == "Jewel" && type[iT] == "PbPb") // R = 3 bug.
+               if(tag == "Jewel" && type[iT] == "PbPb" && centrality[iC] != "50-90") // R = 3 bug.
                {
                   R3Correction = true;
                   Tree->SetBranchAddress("EventWeightR03", &EventWeightR03);
@@ -364,7 +364,7 @@ void PrintYiFile(string OutFileName, TH1D histogram[], int NRadii)
    for(int iB = 1; iB <= axis->GetNbins(); iB++)
    {
       OutFile << axis->GetBinLowEdge(iB) << " ";
-      OutFile << axis->GetBinLowEdge(iB) << " ";
+      OutFile << axis->GetBinUpEdge(iB) << " ";
       
       for(int iR = 0; iR < NRadii; iR++)
       {
