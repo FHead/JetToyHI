@@ -50,7 +50,11 @@ int main(int argc, char *argv[])
    }
    else if(tag == "Pyquen")
    {
-      NCentrality = 1;
+      NCentrality = 2;
+      centrality[0] = "";
+      centrality[1] = "0-10";
+      CentralityTag[0] = "b=0";
+      CentralityTag[1] = "0to10";
       NType = 2;
       type.push_back("PbPbWide");
       type.push_back("PbPb");
@@ -88,8 +92,8 @@ int main(int argc, char *argv[])
             }
             else if(tag == "Pyquen")
             {
-               HistogramName = type[iT] + "_R" + radius[iR];
-               HistogramTitle = type[iT] + " R = " + radius[iR];
+               HistogramName = type[iT] + "_R" + radius[iR] + "_C" + CentralityTag[iC];
+               HistogramTitle = type[iT] + " " + centrality[iC] + " R = " + radius[iR];
             }
             
             PbPbJetPT[iT][iC][iR] = TH1D(Form("%s_JetPT",HistogramName.c_str()), Form("%s Weighted & Scaled Jet PT",HistogramTitle.c_str()), NBins, 200, 1000);
@@ -118,11 +122,11 @@ int main(int argc, char *argv[])
          {
             if (iT == NType - 1) cout << ", and ";
             else                 cout << ", ";
-            cout << "PbPb " << type[iT];
+            cout << type[iT];
          }
       
-         if(tag == "Jewel") cout << "for centrality 0-10%, 10-30%, 30-50%, and 50-90%" << endl;
-         else if(tag == "Pyquen") cout << endl;
+         if(tag == "Jewel") cout << " for centrality 0-10%, 10-30%, 30-50%, and 50-90%" << endl;
+         else if(tag == "Pyquen") cout << " for b = 0 and centrality 0-10%" << endl;
          
          return -1;
       }
@@ -170,13 +174,19 @@ int main(int argc, char *argv[])
             string CheckFileName;
             
             if(tag == "Jewel")         CheckFileName = type[iT] + "-" + centrality[iC] + ".root";
-            else if (tag == "Pyquen")  CheckFileName = type[iT] + ".root";
+            else if (tag == "Pyquen")
+            {
+               if (centrality[iC] == "0-10")
+                  CheckFileName = type[iT] + "-" + centrality[iC] + ".root";
+               else
+                  CheckFileName = type[iT] + ".root";
+            }
             
             if (FileName.find(CheckFileName) != string::npos)
             {
                JetPTPtr = PbPbJetPT[iT][iC];
                
-               if(tag == "Jewel" && type[iT] == "PbPb" && centrality[iC] != "50-90") // R = 3 bug.
+               if(tag == "Jewel" && type[iT] == "PbPb" && (centrality[iC] == "0-10" || centrality[iC] == "10-30")) // R = 3 bug.
                {
                   R3Correction = true;
                   Tree->SetBranchAddress("EventWeightR03", &EventWeightR03);
@@ -343,7 +353,13 @@ int main(int argc, char *argv[])
       {
          string OutFileBase;
          if(tag == "Jewel") OutFileBase = OutputBase + "_" + type[iT] + "_" + CentralityTag[iC];
-         else if(tag == "Pyquen") OutFileBase = OutputBase + "_" + type[iT];
+         else if(tag == "Pyquen")
+         {
+            if (centrality[iC] == "0-10")
+               OutFileBase = OutputBase + "_" + type[iT] + "_" + CentralityTag[iC];
+            else
+               OutFileBase = OutputBase + "_" + type[iT];
+         }
          
          PrintYiFile(OutFileBase + "_RAA.txt", JetRAA[iT][iC], NRadii);
          PrintYiFile(OutFileBase + "_RRAA.txt", JetRRAA[iT][iC], NRadii);
