@@ -30,34 +30,45 @@ int main(int argc, char *argv[])
    const int NRadii = 6;
    string radius[NRadii] = {"02", "03", "04", "06", "08", "10"};
    
-   const int NMaxType = 4;
-   const int NMaxCentrality = 4;
-   string CentralityTag[NMaxCentrality] = {"0to10", "10to30", "30to50", "50to90"};  // Used to name histograms.
-   string centrality[NMaxCentrality] = {"0-10", "10-30", "30-50", "50-90"};         // Used to open files.
-
    int NCentrality;
+   vector<string> CentralityTag; // Used to name histograms.
+   vector<string> centrality;    // Used to open files.
    
-   int NType;
+   int NType; // Holds different types of PbPb data produced by the same generator with different settings.
    vector<string> type;
+   
+   int NStat;  // For Pyquen which has a normal pthat sample and a pthat = 250 sample.
+   vector<string> stat;
    
    // Define the different kinds of PbPb data depending on the theory type.
    if(tag == "Jewel")
    {
       NCentrality = 4;
+      CentralityTag.push_back("0to10");
+      CentralityTag.push_back("10to30");
+      CentralityTag.push_back("30to50");
+      CentralityTag.push_back("50to90");
+      centrality.push_back("0-10");
+      centrality.push_back("10-30");
+      centrality.push_back("30-50");
+      centrality.push_back("50-90");
       NType = 2;
       type.push_back("PbPbNoRecoil");
       type.push_back("PbPb");
+      NStat = 1;
+      stat.push_back("");
    }
    else if(tag == "Pyquen")
    {
-      NCentrality = 2;
-      centrality[0] = "";
-      centrality[1] = "0-10";
-      CentralityTag[0] = "b=0";
-      CentralityTag[1] = "0to10";
+      NCentrality = 1;
+      CentralityTag.push_back("0to10");
+      centrality.push_back("0-10");
       NType = 2;
       type.push_back("PbPbWide");
       type.push_back("PbPb");
+      NStat = 2;
+      stat.push_back("150");
+      stat.push_back("250");
    }
    else
    {
@@ -66,48 +77,51 @@ int main(int argc, char *argv[])
    }
 
    // Create histograms.
-   TH1D PPJetPT[NRadii];
-   TH1D PbPbJetPT[NMaxType][NMaxCentrality][NRadii];
-   TH1D JetRAA[NMaxType][NMaxCentrality][NRadii];
-   TH1D JetRRAA[NMaxType][NMaxCentrality][NRadii];
+   TH1D PPJetPT[NStat][NRadii];
+   TH1D PbPbJetPT[NType][NStat][NCentrality][NRadii];
+   TH1D JetRAA[NType][NStat][NCentrality][NRadii];
+   TH1D JetRRAA[NType][NStat][NCentrality][NRadii];
 
    const int NBins = 160;
    
-   for(int iR = 0; iR < NRadii; iR++)
+   for(int iS = 0; iS < NStat; iS++)
    {
-      PPJetPT[iR] = TH1D(Form("PP_R%s_JetPT",radius[iR].c_str()), Form("PP R = %s Weighted & Scaled Jet PT",radius[iR].c_str()), NBins, 200, 1000);
-      PPJetPT[iR].Sumw2();
-
-      for(int iT = 0; iT < NType; iT++)
+      for(int iR = 0; iR < NRadii; iR++)
       {
-         for(int iC = 0; iC < NCentrality; iC++)
-         {
-            string HistogramName;
-            string HistogramTitle;
-            
-            if(tag == "Jewel")
-            {
-               HistogramName = type[iT] + "_R" + radius[iR] + "_C" + CentralityTag[iC];
-               HistogramTitle = type[iT] + " " + centrality[iC] + "% R = " + radius[iR];
-            }
-            else if(tag == "Pyquen")
-            {
-               HistogramName = type[iT] + "_R" + radius[iR] + "_C" + CentralityTag[iC];
-               HistogramTitle = type[iT] + " " + centrality[iC] + " R = " + radius[iR];
-            }
-            
-            PbPbJetPT[iT][iC][iR] = TH1D(Form("%s_JetPT",HistogramName.c_str()), Form("%s Weighted & Scaled Jet PT",HistogramTitle.c_str()), NBins, 200, 1000);
-            PbPbJetPT[iT][iC][iR].Sumw2();
+         PPJetPT[iS][iR] = TH1D(Form("PP%s_R%s_JetPT",stat[iS].c_str(),radius[iR].c_str()), Form("PP R = %s Weighted & Scaled Jet PT",radius[iR].c_str()), NBins, 200, 1000);
+         PPJetPT[iS][iR].Sumw2();
 
-            JetRAA[iT][iC][iR] = TH1D(Form("%s_JetRAA",HistogramName.c_str()), Form("%s Jet RAA",HistogramTitle.c_str()), bins.size()-1, &bins[0]);
-            JetRAA[iT][iC][iR].SetMaximum(1.5);
-            JetRAA[iT][iC][iR].SetMinimum(0);
-            JetRAA[iT][iC][iR].SetStats(0);
-            
-            JetRRAA[iT][iC][iR] = TH1D(Form("%s_JetRRAA",HistogramName.c_str()), Form("%s Jet RRAA",HistogramTitle.c_str()), bins.size()-1, &bins[0]);
-            JetRRAA[iT][iC][iR].SetMaximum(2.5);
-            JetRRAA[iT][iC][iR].SetMinimum(0);
-            JetRRAA[iT][iC][iR].SetStats(0);
+         for(int iT = 0; iT < NType; iT++)
+         {
+            for(int iC = 0; iC < NCentrality; iC++)
+            {
+               string HistogramName;
+               string HistogramTitle;
+               
+               if(tag == "Jewel")
+               {
+                  HistogramName = type[iT] + stat[iS] + "_R" + radius[iR] + "_C" + CentralityTag[iC];
+                  HistogramTitle = type[iT] + stat[iS] + " " + centrality[iC] + "% R = " + radius[iR];
+               }
+               else if(tag == "Pyquen")
+               {
+                  HistogramName = type[iT] + stat[iS] + "_R" + radius[iR] + "_C" + CentralityTag[iC];
+                  HistogramTitle = type[iT] + stat[iS] + " " + centrality[iC] + " R = " + radius[iR];
+               }
+               
+               PbPbJetPT[iS][iT][iC][iR] = TH1D(Form("%s_JetPT",HistogramName.c_str()), Form("%s Weighted & Scaled Jet PT",HistogramTitle.c_str()), NBins, 200, 1000);
+               PbPbJetPT[iS][iT][iC][iR].Sumw2();
+
+               JetRAA[iS][iT][iC][iR] = TH1D(Form("%s_JetRAA",HistogramName.c_str()), Form("%s Jet RAA",HistogramTitle.c_str()), bins.size()-1, &bins[0]);
+               JetRAA[iS][iT][iC][iR].SetMaximum(1.5);
+               JetRAA[iS][iT][iC][iR].SetMinimum(0);
+               JetRAA[iS][iT][iC][iR].SetStats(0);
+               
+               JetRRAA[iS][iT][iC][iR] = TH1D(Form("%s_JetRRAA",HistogramName.c_str()), Form("%s Jet RRAA",HistogramTitle.c_str()), bins.size()-1, &bins[0]);
+               JetRRAA[iS][iT][iC][iR].SetMaximum(2.5);
+               JetRRAA[iS][iT][iC][iR].SetMinimum(0);
+               JetRRAA[iS][iT][iC][iR].SetStats(0);
+            }
          }
       }
    }
@@ -115,19 +129,14 @@ int main(int argc, char *argv[])
    // Get spectra.
    for(string FileName : InputFileNames)
    {
-      if (InputFileNames.size() != NType*NCentrality + 1)
+      if(tag == "Jewel" && InputFileNames.size() != 9)
       {
-         cout << "Input Error: Please input " << NType*NCentrality + 1 << " files for PP";
-         for (int iT = 0; iT < NType; iT++)
-         {
-            if (iT == NType - 1) cout << ", and ";
-            else                 cout << ", ";
-            cout << type[iT];
-         }
-      
-         if(tag == "Jewel") cout << " for centrality 0-10%, 10-30%, 30-50%, and 50-90%" << endl;
-         else if(tag == "Pyquen") cout << " for b = 0 and centrality 0-10%" << endl;
-         
+         cout << "Input Error: Please input 9 files for PP, PbPb, and PbPbNoRecoil centrality 0-10%, 10-30%, 30-50%, and 50-90%" << endl;
+         return -1;
+      }
+      if(tag == "Pyquen" && InputFileNames.size() != 6)
+      {
+         cout << "Input Error: Please input 6 files for PP, PbPb, and PbPbNoRecoil for normal pthat and pthat = 250" << endl;
          return -1;
       }
 
@@ -158,38 +167,34 @@ int main(int argc, char *argv[])
       // R = 3 for Jewel PP and PbPb (aka not PbPbNoRecoil) needs a different EventWeight because it was generated separately.
       bool R3Correction = false;
       TH1D *JetPTPtr;
-      if(FileName.find("PP.root") != string::npos)
+      
+      for(int iS = 0; iS < NStat; iS++)
       {
-         JetPTPtr = PPJetPT;
-         if(tag == "Jewel") // R = 3 bug.
+         if(FileName.find("PP" + stat[iS] + ".root") != string::npos)
          {
-            R3Correction = true;
-            Tree->SetBranchAddress("EventWeightR03", &EventWeightR03);
-         }
-      }
-      else for(int iT = 0; iT < NType; iT++)
-      {
-         for(int iC = 0; iC < NCentrality; iC++)
-         {
-            string CheckFileName;
-            
-            if(tag == "Jewel")         CheckFileName = type[iT] + "-" + centrality[iC] + ".root";
-            else if (tag == "Pyquen")
+            JetPTPtr = PPJetPT[iS];
+
+            if(tag == "Jewel") // R = 3 bug.
             {
-               if (centrality[iC] == "0-10")
-                  CheckFileName = type[iT] + "-" + centrality[iC] + ".root";
-               else
-                  CheckFileName = type[iT] + ".root";
+               R3Correction = true;
+               Tree->SetBranchAddress("EventWeightR03", &EventWeightR03);
             }
-            
-            if (FileName.find(CheckFileName) != string::npos)
+         }
+         else for(int iT = 0; iT < NType; iT++)
+         {
+            for(int iC = 0; iC < NCentrality; iC++)
             {
-               JetPTPtr = PbPbJetPT[iT][iC];
+               string CheckFileName = type[iT] + stat[iS] + "-" + centrality[iC] + ".root";
                
-               if(tag == "Jewel" && type[iT] == "PbPb" && (centrality[iC] == "0-10" || centrality[iC] == "10-30")) // R = 3 bug.
+               if (FileName.find(CheckFileName) != string::npos)
                {
-                  R3Correction = true;
-                  Tree->SetBranchAddress("EventWeightR03", &EventWeightR03);
+                  JetPTPtr = PbPbJetPT[iS][iT][iC];
+                  
+                  if(tag == "Jewel" && type[iT] == "PbPb" && (centrality[iC] == "0-10" || centrality[iC] == "10-30")) // R = 3 bug.
+                  {
+                     R3Correction = true;
+                     Tree->SetBranchAddress("EventWeightR03", &EventWeightR03);
+                  }
                }
             }
          }
@@ -232,21 +237,22 @@ int main(int argc, char *argv[])
    }
    
    // Rebin spectra.
-   TH1 *PPJetPTRebin[NRadii];
-   TH1 *PbPbJetPTRebin[NMaxType][NMaxCentrality][NRadii];
-   for(int iR = 0; iR < NRadii; iR++)
+   TH1 *PPJetPTRebin[NStat][NRadii];
+   TH1 *PbPbJetPTRebin[NStat][NType][NCentrality][NRadii];
+   for(int iS = 0; iS < NStat; iS++)
    {
-      PPJetPTRebin[iR] = PPJetPT[iR].Rebin(bins.size()-1,Form("PP_%s_JetPT_Rebin",radius[iR].c_str()),&bins[0]);
-
-      for(int iT = 0; iT < NType; iT++)
+      for(int iR = 0; iR < NRadii; iR++)
       {
-         for(int iC = 0; iC < NCentrality; iC++)
+         PPJetPTRebin[iS][iR] = PPJetPT[iS][iR].Rebin(bins.size()-1,Form("PP%s_%s_JetPT_Rebin",stat[iS].c_str(),radius[iR].c_str()),&bins[0]);
+
+         for(int iT = 0; iT < NType; iT++)
          {
-            string HistogramName;
-            if(tag == "Jewel")         HistogramName = type[iT] + "_R" + radius[iR] + "_C" + CentralityTag[iC];
-            else if(tag == "Pyquen")   HistogramName = type[iT] + "_R" + radius[iR];
-            
-            PbPbJetPTRebin[iT][iC][iR] = PbPbJetPT[iT][iC][iR].Rebin(bins.size()-1,Form("%s_JetRAA_Rebin",HistogramName.c_str(),type[iT].c_str()),&bins[0]);
+            for(int iC = 0; iC < NCentrality; iC++)
+            {
+               string HistogramName = type[iT] + stat[iS] + "_R" + radius[iR] + "_C" + CentralityTag[iC];
+               
+               PbPbJetPTRebin[iS][iT][iC][iR] = PbPbJetPT[iS][iT][iC][iR].Rebin(bins.size()-1,Form("%s_JetRAA_Rebin",HistogramName.c_str(),type[iT].c_str()),&bins[0]);
+            }
          }
       }
    }
@@ -260,15 +266,30 @@ int main(int argc, char *argv[])
          {
             for(int iB = 1; iB <= bins.size()-1; iB++)
             {
-               double PbPbValue = PbPbJetPTRebin[iT][iC][iR]->GetBinContent(iB);
-               double PbPbRelError = PbPbJetPTRebin[iT][iC][iR]->GetBinError(iB)/PbPbValue;
-               double PPValue = PPJetPTRebin[iR]->GetBinContent(iB);
-               double PPRelError = PPJetPTRebin[iR]->GetBinError(iB)/PPValue;
+               double PbPbValue = PbPbJetPTRebin[0][iT][iC][iR]->GetBinContent(iB);
+               double PbPbRelError = PbPbJetPTRebin[0][iT][iC][iR]->GetBinError(iB)/PbPbValue;
+               double PPValue = PPJetPTRebin[0][iR]->GetBinContent(iB);
+               double PPRelError = PPJetPTRebin[0][iR]->GetBinError(iB)/PPValue;
                double RAAValue = PbPbValue/PPValue;
                double RAAError = sqrt(pow(PbPbRelError,2) + pow(PPRelError,2))*RAAValue;
 
-               JetRAA[iT][iC][iR].SetBinContent(iB,RAAValue);
-               JetRAA[iT][iC][iR].SetBinError(iB,RAAError);
+               JetRAA[0][iT][iC][iR].SetBinContent(iB,RAAValue);
+               JetRAA[0][iT][iC][iR].SetBinError(iB,RAAError);
+               
+               if(tag == "Pyquen")
+               {
+                  if(bins[iB-1] >= 300) // Only want to use pthat = 250 for bins greater than 300.
+                  {
+                     PbPbValue = PbPbJetPTRebin[1][iT][iC][iR]->GetBinContent(iB);
+                     PbPbRelError = PbPbJetPTRebin[1][iT][iC][iR]->GetBinError(iB)/PbPbValue;
+                     PPValue = PPJetPTRebin[1][iR]->GetBinContent(iB);
+                     PPRelError = PPJetPTRebin[1][iR]->GetBinError(iB)/PPValue;
+                     RAAValue = PbPbValue/PPValue;
+                     RAAError = sqrt(pow(PbPbRelError,2) + pow(PPRelError,2))*RAAValue;
+                  }
+                  JetRAA[1][iT][iC][iR].SetBinContent(iB,RAAValue);
+                  JetRAA[1][iT][iC][iR].SetBinError(iB,RAAError);
+               }
             }
          }
       }
@@ -285,20 +306,38 @@ int main(int argc, char *argv[])
             {
                if(iR == 0)
                {
-                  JetRRAA[iT][iC][0].SetBinContent(iB,1);
-                  JetRRAA[iT][iC][0].SetBinError(iB,0);
+                  for(int iS = 0; iS < NStat; iS++)
+                  {
+                     JetRRAA[iS][iT][iC][0].SetBinContent(iB,1);
+                     JetRRAA[iS][iT][iC][0].SetBinError(iB,0);
+                  }
                }
                else
                {
-                  double ThisRAAValue = JetRAA[iT][iC][iR].GetBinContent(iB);
-                  double ThisRAARelError = JetRAA[iT][iC][iR].GetBinError(iB)/ThisRAAValue;
-                  double R02RAAValue = JetRAA[iT][iC][0].GetBinContent(iB);
-                  double R02RAARelError = JetRAA[iT][iC][0].GetBinError(iB)/R02RAAValue;
+                  double ThisRAAValue = JetRAA[0][iT][iC][iR].GetBinContent(iB);
+                  double ThisRAARelError = JetRAA[0][iT][iC][iR].GetBinError(iB)/ThisRAAValue;
+                  double R02RAAValue = JetRAA[0][iT][iC][0].GetBinContent(iB);
+                  double R02RAARelError = JetRAA[0][iT][iC][0].GetBinError(iB)/R02RAAValue;
                   double RRAAValue = ThisRAAValue/R02RAAValue;
                   double RRAAError = sqrt(pow(ThisRAARelError,2) + pow(R02RAARelError,2))*RRAAValue;
 
-                  JetRRAA[iT][iC][iR].SetBinContent(iB,RRAAValue);
-                  JetRRAA[iT][iC][iR].SetBinError(iB,RRAAError);
+                  JetRRAA[0][iT][iC][iR].SetBinContent(iB,RRAAValue);
+                  JetRRAA[0][iT][iC][iR].SetBinError(iB,RRAAError);
+                  
+                  if(tag == "Pyquen")
+                  {
+                     if(bins[iB-1] >= 300) // Only want to use pthat = 250 for bins greater than 300.
+                     {
+                        ThisRAAValue = JetRAA[1][iT][iC][iR].GetBinContent(iB);
+                        ThisRAARelError = JetRAA[1][iT][iC][iR].GetBinError(iB)/ThisRAAValue;
+                        R02RAAValue = JetRAA[1][iT][iC][0].GetBinContent(iB);
+                        R02RAARelError = JetRAA[1][iT][iC][0].GetBinError(iB)/R02RAAValue;
+                        RRAAValue = ThisRAAValue/R02RAAValue;
+                        RRAAError = sqrt(pow(ThisRAARelError,2) + pow(R02RAARelError,2))*RRAAValue;
+                     }
+                     JetRRAA[1][iT][iC][iR].SetBinContent(iB,RRAAValue);
+                     JetRRAA[1][iT][iC][iR].SetBinError(iB,RRAAError);
+                  }
                }
             }
          }
@@ -306,63 +345,61 @@ int main(int argc, char *argv[])
    }
    
    // Write histograms to pdf and root files.
-   for(int iR = 0; iR < NRadii; iR++)
-   {
-      PdfFile.AddPlot(PPJetPT[iR], "", true);
-      for(int iT = 0; iT < NType; iT++)
-         for(int iC = 0; iC < NCentrality; iC++)
-            PdfFile.AddPlot(PbPbJetPT[iT][iC][iR], "", true);
-   }
-   
-   for(int iT = 0; iT < NType; iT++)
-      for(int iR = 0; iR < NRadii; iR++)
-         for(int iC = 0; iC < NCentrality; iC++)
-            PdfFile.AddPlot(JetRAA[iT][iC][iR], "", false);
-
-   for(int iT = 0; iT < NType; iT++)
-      for(int iR = 0; iR < NRadii; iR++)
-         for(int iC = 0; iC < NCentrality; iC++)
-            PdfFile.AddPlot(JetRRAA[iT][iC][iR], "", false);
-   
-   //PdfFile.AddTimeStampPage();
-   PdfFile.Close();
+//   for(int iR = 0; iR < NRadii; iR++)
+//   {
+//      PdfFile.AddPlot(PPJetPT[iR], "", true);
+//      for(int iT = 0; iT < NType; iT++)
+//         for(int iC = 0; iC < NCentrality; iC++)
+//            PdfFile.AddPlot(PbPbJetPT[iT][iC][iR], "", true);
+//   }
+//
+//   for(int iT = 0; iT < NType; iT++)
+//      for(int iR = 0; iR < NRadii; iR++)
+//         for(int iC = 0; iC < NCentrality; iC++)
+//            PdfFile.AddPlot(JetRAA[iT][iC][iR], "", false);
+//
+//   for(int iT = 0; iT < NType; iT++)
+//      for(int iR = 0; iR < NRadii; iR++)
+//         for(int iC = 0; iC < NCentrality; iC++)
+//            PdfFile.AddPlot(JetRRAA[iT][iC][iR], "", false);
+//
+//   //PdfFile.AddTimeStampPage();
+//   PdfFile.Close();
 
    outf->cd();
-   for(int iR = 0; iR < NRadii; iR++)
-   {
-      PPJetPT[iR].Write();
+   for(int iS = 0; iS < NStat; iS++)
+      for(int iR = 0; iR < NRadii; iR++)
+      {
+         PPJetPT[iS][iR].Write();
+            for(int iT = 0; iT < NType; iT++)
+               for(int iC = 0; iC < NCentrality; iC++)
+                  PbPbJetPT[iS][iT][iC][iR].Write();
+      }
+   
+   for(int iS = 0; iS < NStat; iS++)
       for(int iT = 0; iT < NType; iT++)
-         for(int iC = 0; iC < NCentrality; iC++)
-            PbPbJetPT[iT][iC][iR].Write();
-   }
+         for(int iR = 0; iR < NRadii; iR++)
+            for(int iC = 0; iC < NCentrality; iC++)
+               JetRAA[iS][iT][iC][iR].Write();
    
-   for(int iT = 0; iT < NType; iT++)
-      for(int iR = 0; iR < NRadii; iR++)
-         for(int iC = 0; iC < NCentrality; iC++)
-            JetRAA[iT][iC][iR].Write();
-   
-   for(int iT = 0; iT < NType; iT++)
-      for(int iR = 0; iR < NRadii; iR++)
-         for(int iC = 0; iC < NCentrality; iC++)
-            JetRRAA[iT][iC][iR].Write();
+   for(int iS = 0; iS < NStat; iS++)
+      for(int iT = 0; iT < NType; iT++)
+         for(int iR = 0; iR < NRadii; iR++)
+            for(int iC = 0; iC < NCentrality; iC++)
+               JetRRAA[iS][iT][iC][iR].Write();
 
    // Write to text file for Yi's analysis code
-   for(int iT = 0; iT < NType; iT++)
+   for(int iS = 0; iS < NStat; iS++)
    {
-      for (int iC = 0; iC < NCentrality; iC++)
+      for(int iT = 0; iT < NType; iT++)
       {
-         string OutFileBase;
-         if(tag == "Jewel") OutFileBase = OutputBase + "_" + type[iT] + "_" + CentralityTag[iC];
-         else if(tag == "Pyquen")
+         for (int iC = 0; iC < NCentrality; iC++)
          {
-            if (centrality[iC] == "0-10")
-               OutFileBase = OutputBase + "_" + type[iT] + "_" + CentralityTag[iC];
-            else
-               OutFileBase = OutputBase + "_" + type[iT];
+            string OutFileBase = OutputBase + "_" + type[iT] + stat[iS] + "_" + CentralityTag[iC];
+            
+            PrintYiFile(OutFileBase + "_RAA.txt", JetRAA[iS][iT][iC], NRadii);
+            PrintYiFile(OutFileBase + "_RRAA.txt", JetRRAA[iS][iT][iC], NRadii);
          }
-         
-         PrintYiFile(OutFileBase + "_RAA.txt", JetRAA[iT][iC], NRadii);
-         PrintYiFile(OutFileBase + "_RRAA.txt", JetRRAA[iT][iC], NRadii);
       }
    }
 
