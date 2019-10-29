@@ -73,7 +73,7 @@ void SetThesisStyle()
    // gStyle->SetHistLineWidth(3.85);
    gStyle->SetLineStyleString(2,"[12 12]"); // postscript dashes
 
-   gStyle->SetErrorX(0.001);
+   //gStyle->SetErrorX(0.001);
 
    // gStyle->SetOptTitle(0);
    gStyle->SetOptStat(0);
